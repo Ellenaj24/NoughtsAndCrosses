@@ -1,98 +1,112 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useState } from 'react';
+import { Button, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [board, setBoard] = useState(Array(9).fill(null));
+  const [isXNext, setIsXNext] = useState(true);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const calculateWinner = (squares) => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    for (let i = 0; i < lines.length; i++) {
+      const [a, b, c] = lines[i];
+      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+        return squares[a];
+      }
+    }
+    return null;
+  };
+
+  const winner = calculateWinner(board);
+
+  const handlePress = (index) => {
+    if (board[index] || winner) return;
+
+    const newBoard = [...board];
+    newBoard[index] = isXNext ? 'X' : 'O';
+    setBoard(newBoard);
+    setIsXNext(!isXNext);
+  };
+
+  const resetGame = () => {
+    setBoard(Array(9).fill(null));
+    setIsXNext(true);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Noughts & Crosses</Text>
+      
+      <View style={styles.board}>
+        {board.map((cell, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.square} 
+            onPress={() => handlePress(index)}
+          >
+            <Text style={[
+              styles.cellText, 
+              { color: cell === 'X' ? '#FF5E5E' : '#32CD32' }
+            ]}>
+              {cell}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {winner && <Text style={styles.winnerText}>Winner: {winner}!</Text>}
+      {!winner && !board.includes(null) && <Text style={styles.winnerText}>It's a Draw!</Text>}
+
+      <View style={styles.buttonContainer}>
+        <Button title="Restart Game" onPress={resetGame} />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  board: {
+    width: 300,
+    height: 300,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    borderColor: '#000',
+    borderWidth: 2,
   },
+  square: {
+    width: '33.33%',
+    height: '33.33%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  cellText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+  },
+  winnerText: {
+    fontSize: 24,
+    marginTop: 20,
+    fontWeight: '600',
+    color: 'blue',
+  },
+  buttonContainer: {
+    marginTop: 20,
+  }
 });
